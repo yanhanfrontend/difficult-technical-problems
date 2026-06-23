@@ -10,7 +10,7 @@
       >
         <!-- 左侧：显示标签或占位文本 -->
         <div class="flex-1 flex flex-wrap items-center gap-1 min-w-0">
-          <span v-if="selectedValues.length === 0" class="text-gray-400 text-sm">请选择</span>
+          <span v-if="selectedValues.length === 0" class="text-gray-400 text-sm">Please select</span>
           <template v-else>
             <el-tag
                 v-for="opt in displayTags"
@@ -56,12 +56,12 @@
           class="absolute left-0 right-0 top-full z-10 mt-1 border border-gray-200 rounded bg-white dropdown-panel"
       >
         <!-- 搜索框 -->
-        <div class="p-2 border-b relative">
+        <div class="p-2 border-b border-gray-300 relative">
           <input
               ref="searchInput"
               v-model="searchText"
               type="text"
-              placeholder="搜索..."
+              placeholder="Search..."
               class="w-full border border-gray-300 rounded px-2 py-1 text-sm pr-7 focus:outline-none focus:border-blue-400"
           />
           <button
@@ -73,15 +73,13 @@
           </button>
         </div>
 
-        <!-- 全选 -->
-        <div class="px-3 py-2 border-b flex items-center justify-between">
+        <div class="px-3 py-2 border-b border-b-gray-300 flex items-center justify-between">
           <el-checkbox :model-value="isAllSelected" @change="toggleAll" :indeterminate="isIndeterminate">
-            全选
+            All
           </el-checkbox>
           <span class="text-xs text-gray-500">{{ selectedValues.length }}/{{ options.length }}</span>
         </div>
 
-        <!-- 选项列表 -->
         <div class="max-h-48 overflow-y-auto scroll-area p-1">
           <div v-if="filteredOptions.length === 0" class="text-center py-4 text-gray-400 text-sm">无匹配</div>
           <div

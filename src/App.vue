@@ -29,9 +29,9 @@
 </template>
 
 <script lang="ts" setup>
-import VirtualizedTable from "./components/VirtualizedTable.vue";
-import MultiSearchSelector from "./components/MultiSearchSelector.vue";
 import LargeDataGrid from "./components/LargeDataGrid.vue";
+import MultiSearchSelector from "./components/MultiSearchSelector.vue";
+import VirtualizedTable from "./components/VirtualizedTable.vue";
 </script>
 
 <style scoped>

@@ -1,30 +1,25 @@
 <template>
   <div class="p-4 w-screen h-screen box-border">
     <el-tabs type="border-card" class="h-full w-full">
+      <el-tab-pane label="LargeDataGrid">
+        <el-row align="middle" class="h-[500px]">
+          <el-col :span="24">
+            <LargeDataGrid/>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+
       <el-tab-pane label="MultiSearchSelector">
         <el-row align="middle" class="h-full w-full">
-          <el-col :offset="10" :span="4">
+          <el-col :offset="8" :span="8">
             <MultiSearchSelector/>
           </el-col>
         </el-row>
       </el-tab-pane>
 
-      <el-tab-pane label="VirtualizedMultiSearchSelector">
-        <el-row align="middle" class="h-[300px] w-full">
-          <el-col :offset="10" :span="4">
-            <VirtualizedMultiSearchSelector v-model:value="value" v-model:options="options" :loading="loading"
-                                            @visible-change="handleVisibleChange"/>
-
-            <div class="mt-2 max-h-[200px] overflow-auto">
-              <span>Selected: {{ value }}</span>
-            </div>
-          </el-col>
-        </el-row>
-      </el-tab-pane>
-
       <el-tab-pane label="VirtualizedTable">
-        <el-row align="middle" class="h-[300px] w-full">
-          <el-col :offset="8" :span="8">
+        <el-row align="middle" class="h-[500px] w-full">
+          <el-col :span="24">
             <VirtualizedTable/>
           </el-col>
         </el-row>
@@ -36,9 +31,9 @@
 <script lang="ts" setup>
 import {onBeforeUnmount, ref} from "vue";
 import type {CheckboxValueType} from "element-plus";
-import VirtualizedMultiSearchSelector from "./components/VirtualizedMultiSearchSelector.vue";
 import VirtualizedTable from "./components/VirtualizedTable.vue";
 import MultiSearchSelector from "./components/MultiSearchSelector.vue";
+import LargeDataGrid from "./components/LargeDataGrid.vue";
 
 type OptionItem = {
   value: string;

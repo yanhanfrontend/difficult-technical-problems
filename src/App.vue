@@ -29,70 +29,9 @@
 </template>
 
 <script lang="ts" setup>
-import {onBeforeUnmount, ref} from "vue";
-import type {CheckboxValueType} from "element-plus";
 import VirtualizedTable from "./components/VirtualizedTable.vue";
 import MultiSearchSelector from "./components/MultiSearchSelector.vue";
 import LargeDataGrid from "./components/LargeDataGrid.vue";
-
-type OptionItem = {
-  value: string;
-  label: string;
-};
-
-const initials = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
-
-const value = ref<CheckboxValueType[]>([]);
-
-const loading = ref(false);
-
-const allOptions: OptionItem[] = Array.from({length: 1000}).map((_, idx) => ({
-  value: `Option ${idx + 1}`,
-  label: `${initials[idx % 10]}${idx}`,
-}));
-
-const options = ref<OptionItem[]>([]);
-
-let searchTimer: ReturnType<typeof setTimeout> | undefined;
-let requestId = 0;
-
-const fetchRemoteOptions = async (keyword = '') => {
-  const currentRequestId = ++requestId;
-  const normalizedKeyword = keyword.trim().toLowerCase();
-
-  loading.value = true;
-
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  if (currentRequestId !== requestId) {
-    return;
-  }
-
-  options.value = allOptions.filter((option) => {
-    if (!normalizedKeyword) {
-      return true;
-    }
-
-    return (
-        option.label.toLowerCase().includes(normalizedKeyword) ||
-        option.value.toLowerCase().includes(normalizedKeyword)
-    );
-  });
-
-  loading.value = false;
-};
-
-const handleVisibleChange = (visible: boolean) => {
-  if (visible) {
-    fetchRemoteOptions();
-  }
-};
-
-onBeforeUnmount(() => {
-  if (searchTimer) {
-    clearTimeout(searchTimer);
-  }
-});
 </script>
 
 <style scoped>

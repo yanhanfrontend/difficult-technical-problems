@@ -156,8 +156,8 @@ const handleToggleDropdown = () => {
 };
 
 const handleToggleOption = (value) => {
-  const idx = selectedValues.value.indexOf(value);
-  if (idx > -1) selectedValues.value.splice(idx, 1);
+  const index = selectedValues.value.indexOf(value);
+  if (index > -1) selectedValues.value.splice(index, 1);
   else selectedValues.value.push(value);
 };
 
@@ -190,8 +190,8 @@ const handleClearSelected = () => {
 
 const handleRemoveTag = (value, event) => {
   if (event) event.stopPropagation();
-  const idx = selectedValues.value.indexOf(value);
-  if (idx > -1) selectedValues.value.splice(idx, 1);
+  const index = selectedValues.value.indexOf(value);
+  if (index > -1) selectedValues.value.splice(index, 1);
 };
 
 const handleClickOutside = (e) => {

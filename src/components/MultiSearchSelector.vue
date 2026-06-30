@@ -4,7 +4,7 @@
     <div class="relative">
       <!-- 触发器 -->
       <div
-          @click="toggleDropdown"
+          @click="handleToggleDropdown"
           class="border border-gray-300 rounded px-3 py-2 cursor-pointer flex items-center justify-between"
           :class="{ 'border-blue-500': dropdownVisible }"
       >
@@ -17,7 +17,7 @@
                 :key="opt.value"
                 closable
                 size="small"
-                @close="removeTag(opt.value, $event)"
+                @close="handleRemoveTag(opt.value, $event)"
             >
               {{ opt.label }}
             </el-tag>
@@ -31,7 +31,7 @@
         <div class="flex items-center flex-shrink-0 ml-1">
           <button
               v-if="selectedValues.length > 0"
-              @click.stop="clearSelected"
+              @click.stop="handleClearSelected"
               class="text-gray-400 hover:text-gray-600 text-lg leading-none px-1"
               title="清空所有已选项"
           >
@@ -45,7 +45,7 @@
               stroke="currentColor"
               viewBox="0 0 24 24"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
           </svg>
         </div>
       </div>
@@ -57,24 +57,24 @@
       >
         <!-- 搜索框 -->
         <div class="p-2 border-b border-gray-300 relative">
-          <input
-              ref="searchInput"
+          <el-input
+              ref="searchInputRef"
               v-model="searchText"
               type="text"
               placeholder="Search..."
-              class="w-full border border-gray-300 rounded px-2 py-1 text-sm pr-7 focus:outline-none focus:border-blue-400"
-          />
-          <button
-              v-if="searchText"
-              @click.stop="clearSearch"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
-          >
-            ×
-          </button>
+              @input="handleSearchInput"
+              clearable
+              @clear="handleClearSearch">
+            <template #prefix>
+              <el-icon class="el-input__icon">
+                <search/>
+              </el-icon>
+            </template>
+          </el-input>
         </div>
 
         <div class="px-3 py-2 border-b border-b-gray-300 flex items-center justify-between">
-          <el-checkbox :model-value="isAllSelected" @change="toggleAll" :indeterminate="isIndeterminate">
+          <el-checkbox :model-value="isAllSelected" @change="handleToggleAll" :indeterminate="isIndeterminate">
             All
           </el-checkbox>
           <span class="text-xs text-gray-500">{{ selectedValues.length }}/{{ options.length }}</span>
@@ -86,52 +86,45 @@
               v-for="opt in filteredOptions"
               :key="opt.value"
               class="option-row flex items-center px-2 py-1 rounded cursor-pointer"
-              @click="toggleOption(opt.value)"
+              @click="handleToggleOption(opt.value)"
           >
-            <el-checkbox :model-value="selectedValues.includes(opt.value)" @change="toggleOption(opt.value)" @click.stop>
+            <el-checkbox :model-value="selectedValues.includes(opt.value)" @change="handleToggleOption(opt.value)"
+                         @click.stop>
               {{ opt.label }}
             </el-checkbox>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- 调试信息（位于面板下方，面板悬浮后不会被挤走） -->
-    <div class="mt-3 text-xs text-gray-500">
-      已选：{{ selectedValues.join('、') || '无' }}
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import {computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, PropType, ref, watch} from "vue";
-import type {CheckboxValueType} from "element-plus";
-import {Search} from "@element-plus/icons-vue";
+import {computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef} from "vue";
+import { Search } from '@element-plus/icons-vue'
 
 const options = [
-  { value: 'apple', label: '苹果' },
-  { value: 'banana', label: '香蕉' },
-  { value: 'orange', label: '橙子' },
-  { value: 'grape', label: '葡萄' },
-  { value: 'watermelon', label: '西瓜' },
-  { value: 'strawberry', label: '草莓' },
+  {value: 'apple', label: '苹果'},
+  {value: 'banana', label: '香蕉'},
+  {value: 'orange', label: '橙子'},
+  {value: 'grape', label: '葡萄'},
+  {value: 'watermelon', label: '西瓜'},
+  {value: 'strawberry', label: '草莓'},
 ];
 
 const selectedValues = ref([]);
-const searchText = ref('');
-const dropdownVisible = ref(false);
-const searchInput = ref(null);
 
-// 可配置：最多显示标签数量
+const dropdownVisible = ref(false);
+
+const searchInputRef = useTemplateRef("searchInputRef");
+
+const searchText = ref('');
+
 const maxDisplayTags = ref(2);
 
 const filteredOptions = computed(() => {
   const kw = searchText.value.trim().toLowerCase();
   return kw ? options.filter(o => o.label.includes(kw) || o.value.includes(kw)) : options;
-});
-
-const selectedLabels = computed(() => {
-  return options.filter(o => selectedValues.value.includes(o.value)).map(o => o.label);
 });
 
 const displayTags = computed(() => {
@@ -155,20 +148,26 @@ const isIndeterminate = computed(() => {
   return count > 0 && count < filtered.length;
 });
 
-const toggleDropdown = () => {
+const handleToggleDropdown = () => {
   dropdownVisible.value = !dropdownVisible.value;
   if (dropdownVisible.value) {
-    nextTick(() => searchInput.value?.focus());
+    nextTick(() => searchInputRef.value?.focus());
   }
 };
 
-const toggleOption = (value) => {
+const handleToggleOption = (value) => {
   const idx = selectedValues.value.indexOf(value);
   if (idx > -1) selectedValues.value.splice(idx, 1);
   else selectedValues.value.push(value);
 };
 
-const toggleAll = (checked) => {
+const handleSearchInput = (value) => {
+  if (value) {
+    selectedValues.value = [];
+  }
+};
+
+const handleToggleAll = (checked) => {
   const vals = filteredOptions.value.map(o => o.value);
   if (checked) {
     const set = new Set(selectedValues.value);
@@ -180,22 +179,22 @@ const toggleAll = (checked) => {
   }
 };
 
-const clearSearch = () => {
+const handleClearSearch = () => {
   searchText.value = '';
-  nextTick(() => searchInput.value?.focus());
+  nextTick(() => searchInputRef.value?.focus());
 };
 
-const clearSelected = () => {
+const handleClearSelected = () => {
   selectedValues.value = [];
 };
 
-const removeTag = (value, event) => {
+const handleRemoveTag = (value, event) => {
   if (event) event.stopPropagation();
   const idx = selectedValues.value.indexOf(value);
   if (idx > -1) selectedValues.value.splice(idx, 1);
 };
 
-const onClickOutside = (e) => {
+const handleClickOutside = (e) => {
   if (dropdownVisible.value) {
     // 注意：容器现在是 .relative 父元素，但 .max-w-md 仍然包含它
     const container = document.querySelector('.max-w-md');
@@ -205,17 +204,18 @@ const onClickOutside = (e) => {
   }
 };
 
-const onKeydown = (e) => {
+const handleKeydown = (e) => {
   if (e.key === 'Escape' && dropdownVisible.value) dropdownVisible.value = false;
 };
 
 onMounted(() => {
-  document.addEventListener('click', onClickOutside);
-  document.addEventListener('keydown', onKeydown);
+  document.addEventListener('click', handleClickOutside);
+  document.addEventListener('keydown', handleKeydown);
 });
+
 onUnmounted(() => {
-  document.removeEventListener('click', onClickOutside);
-  document.removeEventListener('keydown', onKeydown);
+  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('keydown', handleKeydown);
 });
 </script>
 

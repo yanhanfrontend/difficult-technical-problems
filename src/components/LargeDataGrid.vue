@@ -1,12 +1,9 @@
 <template>
-  <div class="w-full h-screen p-4 bg-gray-100">
-    <h2 class="text-xl font-bold mb-4">100 × 100 网格（单例全局Tooltip）</h2>
-    <!-- 滚动容器 -->
+  <div class="w-full h-screen">
     <div
         ref="gridWrapRef"
-        class="overflow-auto border border-gray-300 bg-white w-full h-[calc(100vh-160px)]"
+        class="overflow-auto border border-gray-300 bg-white w-full h-[calc(100vh-100px)]"
     >
-      <!-- 网格总容器 100*50 = 5000px宽高 -->
       <div
           class="grid"
           :style="{
@@ -15,7 +12,6 @@
           height: '5000px',
         }"
       >
-        <!-- 10000个格子循环 -->
         <div
             v-for="idx in 10000"
             :key="idx"
@@ -27,10 +23,10 @@
       </div>
     </div>
 
-    <!-- 全局唯一自定义Tooltip，跟随鼠标右侧 -->
     <div
+        ref="tooltipRef"
         v-show="tooltipVisible"
-        class="custom-tooltip"
+        class="fixed z-[9999] pointer-events-none bg-white text-[#303133] px-3 py-2 rounded text-[13px] leading-[1.5] max-w-[280px] whitespace-pre shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
         :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }"
     >
       <p>Variable X: {{ tooltipPos.x }}</p>
@@ -41,14 +37,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import {ref, onBeforeUnmount, useTemplateRef} from 'vue'
 
-// DOM引用
-const gridWrapRef = ref(null)
+const gridWrapRef = useTemplateRef("gridWrapRef")
+const tooltipRef = useTemplateRef("tooltipRef")
 
 // 全局Tooltip状态
 const tooltipVisible = ref(false)
-const tooltipText = ref('')
 const tooltipPos = ref({ x: 0, y: 0 })
 
 // tooltip 尺寸缓存，避免每次移动都强制布局
@@ -64,19 +59,12 @@ const TOOLTIP_MARGIN = 8 // 与视口边缘的安全距离
  */
 const measureTooltip = () => {
   if (sizeMeasured) return
-  // 通过 DOM 查询拿到实际渲染的自定义 tooltip 节点
-  const candidates = document.querySelectorAll('.custom-tooltip')
-  for (const el of candidates) {
-    if (el.getClientRects && el.offsetParent !== null) {
-      cachedWidth = el.offsetWidth
-      cachedHeight = el.offsetHeight
-      if (cachedWidth > 0 && cachedHeight > 0) {
-        sizeMeasured = true
-        break
-      }
-    }
-  }
-  if (!sizeMeasured) {
+  const el = tooltipRef.value
+  if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+    cachedWidth = el.offsetWidth
+    cachedHeight = el.offsetHeight
+    sizeMeasured = true
+  } else {
     // 兜底默认值（与 CSS 设计一致）
     cachedWidth = 220
     cachedHeight = 56
@@ -126,8 +114,6 @@ const computeTooltipPosition = (e) => {
  * y: 行 1~100
  */
 const handleCellHover = (e, idx) => {
-  const y = Math.floor((idx - 1) / 100) + 1
-  const x = ((idx - 1) % 100) + 1
   tooltipVisible.value = true
   // 下一帧再测量，保证 tooltip DOM 已插入
   requestAnimationFrame(() => {
@@ -178,22 +164,4 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style scoped>
-.custom-tooltip {
-  position: fixed;
-  z-index: 9999;
-  pointer-events: none;
-  background: #ffffff;
-  color: #303133;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  line-height: 1.5;
-  max-width: 280px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  white-space: pre;
-}
-.tooltip-line {
-  white-space: pre;
-}
-</style>
+<style scoped></style>

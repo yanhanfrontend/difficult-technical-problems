@@ -1,113 +1,206 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div ref="boxRef" class="h-[500px] border border-gray-300 overflow-auto relative">
-      <canvas ref="canvasRef"></canvas>
+  <div class="w-full h-screen p-4 bg-gray-100">
+    <h2 class="text-xl font-bold mb-4">100 × 100 网格（单例全局Tooltip）</h2>
+    <!-- 滚动容器 -->
+    <div
+        ref="gridWrapRef"
+        class="overflow-auto border border-gray-300 bg-white w-full h-[calc(100vh-160px)]"
+    >
+      <!-- 网格总容器 100*50 = 5000px宽高 -->
       <div
-          ref="tipDom"
-          class="absolute z-50 px-2 py-1 text-xs text-white bg-gray-800 rounded pointer-events-none"
-          style="display:none;"
-      ></div>
+          class="grid"
+          :style="{
+          gridTemplateColumns: 'repeat(100, 50px)',
+          width: '5000px',
+          height: '5000px',
+        }"
+      >
+        <!-- 10000个格子循环 -->
+        <div
+            v-for="idx in 10000"
+            :key="idx"
+            class="w-[50px] h-[50px] border border-gray-200 hover:bg-sky-100 cursor-pointer transition-colors"
+            @mouseenter="handleCellHover($event, idx)"
+            @mousemove="handleMouseMove($event, idx)"
+            @mouseleave="hideTooltip"
+        />
+      </div>
+    </div>
+
+    <!-- 全局唯一自定义Tooltip，跟随鼠标右侧 -->
+    <div
+        v-show="tooltipVisible"
+        class="custom-tooltip"
+        :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }"
+    >
+      <div
+          v-for="(line, i) in tooltipLines"
+          :key="i"
+          class="tooltip-line"
+      >{{ line }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 
-const canvasRef = ref(null)
-const boxRef = ref(null)
-const tipDom = ref(null)
+// DOM引用
+const gridWrapRef = ref(null)
 
-const cellSize = 50
-const gap = 1
-const total = 10000
+// 全局Tooltip状态
+const tooltipVisible = ref(false)
+const tooltipText = ref('')
+const tooltipPos = ref({ x: 0, y: 0 })
+const tooltipEl = ref(null)
 
-function getRandomColor() {
-  const r = Math.floor(Math.random() * 220)
-  const g = Math.floor(Math.random() * 220)
-  const b = Math.floor(Math.random() * 220)
-  return `rgb(${r},${g},${b})`
+// 用于换行展示
+const tooltipLines = computed(() => tooltipText.value.split('\n'))
+
+// tooltip 尺寸缓存，避免每次移动都强制布局
+let cachedWidth = 0
+let cachedHeight = 0
+let sizeMeasured = false
+
+const TOOLTIP_OFFSET = 12 // 与鼠标之间的间距
+const TOOLTIP_MARGIN = 8 // 与视口边缘的安全距离
+
+/**
+ * 计算tooltip实际宽高（只测量一次）
+ */
+const measureTooltip = () => {
+  if (sizeMeasured) return
+  // 通过 DOM 查询拿到实际渲染的自定义 tooltip 节点
+  const candidates = document.querySelectorAll('.custom-tooltip')
+  for (const el of candidates) {
+    if (el.getClientRects && el.offsetParent !== null) {
+      cachedWidth = el.offsetWidth
+      cachedHeight = el.offsetHeight
+      if (cachedWidth > 0 && cachedHeight > 0) {
+        sizeMeasured = true
+        break
+      }
+    }
+  }
+  if (!sizeMeasured) {
+    // 兜底默认值（与 CSS 设计一致）
+    cachedWidth = 220
+    cachedHeight = 56
+    sizeMeasured = true
+  }
 }
 
-// 数学直接计算行列，不再循环遍历（更快）
-function getCellByMouse(mx, my) {
-  const col = Math.floor(mx / (cellSize + gap))
-  const row = Math.floor(my / (cellSize + gap))
-  return { row, col }
-}
+/**
+ * 计算tooltip坐标（跟随鼠标右侧，且不超出视口边界）
+ * @param {MouseEvent} e
+ */
+const computeTooltipPosition = (e) => {
+  const vw = window.innerWidth
+  const vh = window.innerHeight
 
-let ctx = null
-let currentText = ''
+  // 先假设放在鼠标右侧
+  let left = e.clientX + TOOLTIP_OFFSET
+  let top = e.clientY
 
-onMounted(() => {
-  const canvas = canvasRef.value
-  const boxDom = boxRef.value
-  const tipEl = tipDom.value
+  // 在计算前读取一次实际尺寸
+  measureTooltip()
 
-  const colCount = Math.ceil(Math.sqrt(total))
-  const rowCount = Math.ceil(total / colCount)
-  const totalWidth = (cellSize + gap) * colCount - gap
-  const totalHeight = (cellSize + gap) * rowCount - gap
-
-  canvas.width = totalWidth
-  canvas.height = totalHeight
-  ctx = canvas.getContext('2d')
-
-  // 绘制网格
-  let count = 0
-  for (let r = 0; r < rowCount; r++) {
-    for (let c = 0; c < colCount; c++) {
-      if (count >= total) break
-      const x = c * (cellSize + gap)
-      const y = r * (cellSize + gap)
-      ctx.fillStyle = getRandomColor()
-      ctx.fillRect(x, y, cellSize, cellSize)
-
-      ctx.fillStyle = '#fff'
-      ctx.font = '11px sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(`${r + 1},${c + 1}`, x + cellSize / 2, y + cellSize / 2)
-      count++
+  // 水平方向：若右侧放不下，则放到鼠标左侧
+  if (left + cachedWidth + TOOLTIP_MARGIN > vw) {
+    left = e.clientX - cachedWidth - TOOLTIP_OFFSET
+    // 若左侧也放不下，则贴右边
+    if (left < TOOLTIP_MARGIN) {
+      left = Math.max(TOOLTIP_MARGIN, vw - cachedWidth - TOOLTIP_MARGIN)
     }
   }
 
-  // mousemove：实时更新位置，只在格子变化时修改文字
-  canvas.onmousemove = (e) => {
-    // 实时跟随鼠标位置（核心修复）
-    const containerRect = boxDom.getBoundingClientRect()
-    tipEl.style.left = `${e.clientX - containerRect.left + 15}px`
-    tipEl.style.top = `${e.clientY - containerRect.top + 20}px`
-
-    // 获取格子
-    const canvasRect = canvas.getBoundingClientRect()
-    const mx = e.clientX - canvasRect.left
-    const my = e.clientY - canvasRect.top
-    const cell = getCellByMouse(mx, my)
-
-    const newText = `行：${cell.row} 列：${cell.col}`
-    if (newText !== currentText) {
-      currentText = newText
-      tipEl.innerText = newText
-    }
-    tipEl.style.display = 'block'
+  // 垂直方向：不超出视口上下边界
+  if (top + cachedHeight + TOOLTIP_MARGIN > vh) {
+    top = Math.max(TOOLTIP_MARGIN, vh - cachedHeight - TOOLTIP_MARGIN)
+  }
+  if (top < TOOLTIP_MARGIN) {
+    top = TOOLTIP_MARGIN
   }
 
-  canvas.onmouseleave = () => {
-    tipEl.style.display = 'none'
-    currentText = ''
-  }
+  tooltipPos.value = { x: left, y: top }
+}
 
-  canvas.onclick = (e) => {
-    const canvasRect = canvas.getBoundingClientRect()
-    const mx = e.clientX - canvasRect.left
-    const my = e.clientY - canvasRect.top
-    const cell = getCellByMouse(mx, my)
-    console.log(`点击格子：行${cell.row} 列${cell.col}`)
-  }
-})
+/**
+ * 计算格子坐标
+ * idx: 1~10000
+ * x: 列 1~100
+ * y: 行 1~100
+ */
+const handleCellHover = (e, idx) => {
+  const y = Math.floor((idx - 1) / 100) + 1
+  const x = ((idx - 1) % 100) + 1
+  tooltipText.value = `格子坐标：列${x}，行${y}\n索引：${idx}`
+  tooltipVisible.value = true
+  // 下一帧再测量，保证 tooltip DOM 已插入
+  requestAnimationFrame(() => {
+    sizeMeasured = false
+    computeTooltipPosition(e)
+  })
+}
 
-onUnmounted(() => {
-  ctx = null
+const handleMouseMove = (e) => {
+  if (!tooltipVisible.value) return
+  computeTooltipPosition(e)
+}
+
+const hideTooltip = () => {
+  tooltipVisible.value = false
+}
+
+// 窗口尺寸变化时，若 tooltip 仍显示则重新定位
+const handleResize = () => {
+  if (!tooltipVisible.value) return
+  // 使用当前鼠标位置难以精确获取，退而求其次：以当前存储的位置做边界校正
+  const x = tooltipPos.value.x
+  const y = tooltipPos.value.y
+  measureTooltip()
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  let left = x
+  let top = y
+  if (left + cachedWidth + TOOLTIP_MARGIN > vw) {
+    left = Math.max(TOOLTIP_MARGIN, vw - cachedWidth - TOOLTIP_MARGIN)
+  }
+  if (left < TOOLTIP_MARGIN) left = TOOLTIP_MARGIN
+  if (top + cachedHeight + TOOLTIP_MARGIN > vh) {
+    top = Math.max(TOOLTIP_MARGIN, vh - cachedHeight - TOOLTIP_MARGIN)
+  }
+  if (top < TOOLTIP_MARGIN) top = TOOLTIP_MARGIN
+  tooltipPos.value = { x: left, y: top }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', handleResize)
+}
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', handleResize)
+  }
 })
 </script>
+
+<style scoped>
+.custom-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #ffffff;
+  color: #303133;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 280px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  white-space: pre;
+}
+.tooltip-line {
+  white-space: pre;
+}
+</style>

@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-screen">
     <!-- 触发器容器（相对定位，用于悬浮面板） -->
-    <div class="relative">
+    <div ref="containerRef" class="relative" @focusout="handleFocusOut">
       <!-- 触发器 -->
       <div
           @click="handleToggleDropdown"
@@ -54,6 +54,7 @@
       <div
           v-show="dropdownVisible"
           class="absolute left-0 right-0 top-full z-10 mt-1 border border-gray-200 rounded bg-white dropdown-panel"
+          @mousedown="markPanelInteracting"
       >
         <!-- 搜索框 -->
         <div class="p-2 border-b border-gray-300 relative">
@@ -117,8 +118,10 @@ const selectedValues = ref([]);
 const dropdownVisible = ref(false);
 
 const searchInputRef = useTemplateRef("searchInputRef");
+const containerRef = useTemplateRef("containerRef");
 
 const searchText = ref('');
+const panelInteracting = ref(false);
 
 const maxDisplayTags = ref(2);
 
@@ -196,12 +199,35 @@ const handleRemoveTag = (value, event) => {
 
 const handleClickOutside = (e) => {
   if (dropdownVisible.value) {
-    // 注意：容器现在是 .relative 父元素，但 .max-w-md 仍然包含它
-    const container = document.querySelector('.max-w-md');
+    const container = containerRef.value;
     if (container && !container.contains(e.target)) {
       dropdownVisible.value = false;
     }
   }
+};
+
+const handleFocusOut = (e) => {
+  if (!dropdownVisible.value) return;
+  const container = containerRef.value;
+  if (!container) return;
+  // relatedTarget 在容器内部：焦点仍在组件中，不关闭
+  if (e.relatedTarget && container.contains(e.relatedTarget)) return;
+  // 下拉面板内有 mousedown 交互，不属于"失去焦点"
+  if (panelInteracting.value) {
+    panelInteracting.value = false;
+    return;
+  }
+  // 延迟一个 tick 检查实际聚焦位置，处理 Tab 跳出等场景
+  setTimeout(() => {
+    const active = document.activeElement;
+    if (container && !container.contains(active)) {
+      dropdownVisible.value = false;
+    }
+  }, 0);
+};
+
+const markPanelInteracting = () => {
+  panelInteracting.value = true;
 };
 
 const handleKeydown = (e) => {

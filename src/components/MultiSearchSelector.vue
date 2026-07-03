@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 max-w-md mx-auto">
+  <div class="w-full h-screen">
     <!-- 触发器容器（相对定位，用于悬浮面板） -->
     <div class="relative">
       <!-- 触发器 -->

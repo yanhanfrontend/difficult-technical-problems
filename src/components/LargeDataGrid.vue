@@ -33,11 +33,9 @@
         class="custom-tooltip"
         :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }"
     >
-      <div
-          v-for="(line, i) in tooltipLines"
-          :key="i"
-          class="tooltip-line"
-      >{{ line }}</div>
+      <p>Variable X: {{ tooltipPos.x }}</p>
+      <p>Variable Y: {{ tooltipPos.y }}</p>
+      <p>Score: {{ tooltipPos.x * tooltipPos.y }}</p>
     </div>
   </div>
 </template>
@@ -52,10 +50,6 @@ const gridWrapRef = ref(null)
 const tooltipVisible = ref(false)
 const tooltipText = ref('')
 const tooltipPos = ref({ x: 0, y: 0 })
-const tooltipEl = ref(null)
-
-// 用于换行展示
-const tooltipLines = computed(() => tooltipText.value.split('\n'))
 
 // tooltip 尺寸缓存，避免每次移动都强制布局
 let cachedWidth = 0
@@ -134,7 +128,6 @@ const computeTooltipPosition = (e) => {
 const handleCellHover = (e, idx) => {
   const y = Math.floor((idx - 1) / 100) + 1
   const x = ((idx - 1) % 100) + 1
-  tooltipText.value = `格子坐标：列${x}，行${y}\n索引：${idx}`
   tooltipVisible.value = true
   // 下一帧再测量，保证 tooltip DOM 已插入
   requestAnimationFrame(() => {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="w-full h-screen">
     <div
         ref="gridWrapRef"
@@ -13,10 +13,12 @@
         <div
             v-for="idx in 10000"
             :key="idx"
-            class="w-[100px] h-[100px] border border-gray-200 hover:bg-sky-100 cursor-pointer transition-colors flex items-center justify-center"
+            class="w-full h-[100px] border border-gray-200 hover:bg-sky-100 cursor-pointer transition-colors flex items-center justify-center"
+            :class="{ 'bg-sky-300': highlightedIdx === idx }"
             @mouseenter="handleCellHover($event, idx)"
             @mousemove="handleMouseMove($event, idx)"
             @mouseleave="hideTooltip"
+            @click.stop="handleCellClick(idx)"
         >
           {{ Math.floor((idx - 1) / 100) + 1 }}-{{ ((idx - 1) % 100) + 1 }}
         </div>
@@ -36,19 +38,21 @@
 </template>
 
 <script setup>
-import {ref, onBeforeUnmount, useTemplateRef, nextTick} from 'vue'
+import {ref, onBeforeUnmount, useTemplateRef, nextTick, onMounted} from 'vue'
 
 const tooltipRef = useTemplateRef("tooltipRef")
+const gridWrapRef = useTemplateRef("gridWrapRef")
 
 const tooltipVisible = ref(false)
 const tooltipPos = ref({x: 0, y: 0, row: 0, column: 0})
+const highlightedIdx = ref(null)
 
 let cachedWidth = 0
 let cachedHeight = 0
 let sizeMeasured = false
 
-const TOOLTIP_OFFSET = 12 // 与鼠标之间的间距
-const TOOLTIP_MARGIN = 8 // 与视口边缘的安全距离
+const TOOLTIP_OFFSET = 12
+const TOOLTIP_MARGIN = 8
 
 const measureTooltip = () => {
   if (sizeMeasured) return
@@ -107,9 +111,19 @@ const hideTooltip = () => {
   tooltipVisible.value = false
 }
 
+const handleCellClick = (idx) => {
+  highlightedIdx.value = idx
+}
+
+const handleDocumentClick = (e) => {
+  const gridWrap = gridWrapRef.value
+  if (gridWrap && !gridWrap.contains(e.target)) {
+    highlightedIdx.value = null
+  }
+}
+
 const handleResize = () => {
   if (!tooltipVisible.value) return
-  // 使用当前鼠标位置难以精确获取，退而求其次：以当前存储的位置做边界校正
   const x = tooltipPos.value.x
   const y = tooltipPos.value.y
   measureTooltip()
@@ -128,15 +142,20 @@ const handleResize = () => {
   tooltipPos.value = {x: left, y: top}
 }
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('resize', handleResize)
-}
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
 
 onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleResize)
   }
 })
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', handleResize)
+}
 </script>
 
 <style scoped></style>

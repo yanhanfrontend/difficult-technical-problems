@@ -1,6 +1,7 @@
 <template>
   <div class="w-full h-screen">
     <div class="flex flex-wrap gap-4 justify-center items-center mb-6 p-4 bg-gray-50 rounded-lg">
+      <span>目标页码：</span>
       <el-input-number
           v-model="targetPage"
           label="目标页码"
@@ -8,6 +9,8 @@
           :max="pageTotal"
           class="w-40"
       />
+
+      <span>页内行号：</span>
       <el-input-number
           v-model="targetRow"
           label="页内行号"
@@ -15,6 +18,7 @@
           :max="pageSize"
           class="w-40"
       />
+
       <el-button type="primary" @click="scrollToTargetRow">跳转到指定行</el-button>
     </div>
 
@@ -54,6 +58,7 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import LargeDataGrid from "./LargeDataGrid.vue";
 
 // 表格DOM实例
 const tableRef = ref(null)

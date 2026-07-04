@@ -39,7 +39,6 @@
 <script setup>
 import {ref, onBeforeUnmount, useTemplateRef} from 'vue'
 
-const gridWrapRef = useTemplateRef("gridWrapRef")
 const tooltipRef = useTemplateRef("tooltipRef")
 
 // 全局Tooltip状态

@@ -107,13 +107,6 @@ const handleSizeChange = () => {
 }
 const handlePageChange = () => {}
 
-// 点击行内按钮定位当前行
-const handleJumpCurrent = (index) => {
-  targetPage.value = pageNum.value
-  targetRow.value = index + 1
-  scrollToTargetRow()
-}
-
 // 核心：跳转到指定页+指定行
 async function scrollToTargetRow() {
   // 校验页码

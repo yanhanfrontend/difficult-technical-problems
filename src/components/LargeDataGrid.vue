@@ -7,19 +7,19 @@
       <div
           class="grid"
           :style="{
-          gridTemplateColumns: 'repeat(100, 50px)',
-          width: '5000px',
-          height: '5000px',
+          gridTemplateColumns: 'repeat(100, 100px)',
         }"
       >
         <div
             v-for="idx in 10000"
             :key="idx"
-            class="w-[50px] h-[50px] border border-gray-200 hover:bg-sky-100 cursor-pointer transition-colors"
+            class="w-[100px] h-[100px] border border-gray-200 hover:bg-sky-100 cursor-pointer transition-colors flex items-center justify-center"
             @mouseenter="handleCellHover($event, idx)"
             @mousemove="handleMouseMove($event, idx)"
             @mouseleave="hideTooltip"
-        />
+        >
+          {{ Math.floor((idx - 1) / 100) + 1 }}-{{ ((idx - 1) % 100) + 1 }}
+        </div>
       </div>
     </div>
 
@@ -29,21 +29,20 @@
         class="fixed z-[9999] pointer-events-none bg-white text-[#303133] px-3 py-2 rounded text-[13px] leading-[1.5] max-w-[280px] whitespace-pre shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
         :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }"
     >
-      <p>Variable X: {{ tooltipPos.x }}</p>
-      <p>Variable Y: {{ tooltipPos.y }}</p>
-      <p>Score: {{ tooltipPos.x * tooltipPos.y }}</p>
+      <p>Variable Y: {{ tooltipPos.row }}</p>
+      <p>Variable X: {{ tooltipPos.column }}</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import {ref, onBeforeUnmount, useTemplateRef} from 'vue'
+import {ref, onBeforeUnmount, useTemplateRef, nextTick} from 'vue'
 
 const tooltipRef = useTemplateRef("tooltipRef")
 
-// 全局Tooltip状态
+// 全局Tooltip状�?
 const tooltipVisible = ref(false)
-const tooltipPos = ref({ x: 0, y: 0 })
+const tooltipPos = ref({x: 0, y: 0, row: 0, column: 0})
 
 // tooltip 尺寸缓存，避免每次移动都强制布局
 let cachedWidth = 0
@@ -64,7 +63,7 @@ const measureTooltip = () => {
     cachedHeight = el.offsetHeight
     sizeMeasured = true
   } else {
-    // 兜底默认值（与 CSS 设计一致）
+    // 兜底默认值（�?CSS 设计一致）
     cachedWidth = 220
     cachedHeight = 56
     sizeMeasured = true
@@ -72,21 +71,21 @@ const measureTooltip = () => {
 }
 
 /**
- * 计算tooltip坐标（跟随鼠标右侧，且不超出视口边界）
+ * 计算tooltip坐标（跟随鼠标右侧，且不超出视口边界�?
  * @param {MouseEvent} e
  */
-const computeTooltipPosition = (e) => {
+const computeTooltipPosition = async (e, idx) => {
   const vw = window.innerWidth
   const vh = window.innerHeight
 
-  // 先假设放在鼠标右侧
+  // 先假设放在鼠标右�?
   let left = e.clientX + TOOLTIP_OFFSET
   let top = e.clientY
 
-  // 在计算前读取一次实际尺寸
+  // 在计算前读取一次实际尺�?
   measureTooltip()
 
-  // 水平方向：若右侧放不下，则放到鼠标左侧
+  // 水平方向：若右侧放不下，则放到鼠标左�?
   if (left + cachedWidth + TOOLTIP_MARGIN > vw) {
     left = e.clientX - cachedWidth - TOOLTIP_OFFSET
     // 若左侧也放不下，则贴右边
@@ -103,34 +102,34 @@ const computeTooltipPosition = (e) => {
     top = TOOLTIP_MARGIN
   }
 
-  tooltipPos.value = { x: left, y: top }
+  tooltipPos.value = {x: left, y: top, row: Math.floor((idx - 1) / 100) + 1, column: ((idx - 1) % 100) + 1}
 }
 
 /**
  * 计算格子坐标
  * idx: 1~10000
- * x: 列 1~100
- * y: 行 1~100
+ * x: �?1~100
+ * y: �?1~100
  */
-const handleCellHover = (e, idx) => {
+const handleCellHover = async (e, idx) => {
   tooltipVisible.value = true
-  // 下一帧再测量，保证 tooltip DOM 已插入
+  // 下一帧再测量，保�?tooltip DOM 已插�?
   requestAnimationFrame(() => {
     sizeMeasured = false
-    computeTooltipPosition(e)
+    computeTooltipPosition(e, idx)
   })
 }
 
-const handleMouseMove = (e) => {
+const handleMouseMove = (e, idx) => {
   if (!tooltipVisible.value) return
-  computeTooltipPosition(e)
+  computeTooltipPosition(e, idx)
 }
 
 const hideTooltip = () => {
   tooltipVisible.value = false
 }
 
-// 窗口尺寸变化时，若 tooltip 仍显示则重新定位
+// 窗口尺寸变化时，�?tooltip 仍显示则重新定位
 const handleResize = () => {
   if (!tooltipVisible.value) return
   // 使用当前鼠标位置难以精确获取，退而求其次：以当前存储的位置做边界校正
@@ -149,7 +148,7 @@ const handleResize = () => {
     top = Math.max(TOOLTIP_MARGIN, vh - cachedHeight - TOOLTIP_MARGIN)
   }
   if (top < TOOLTIP_MARGIN) top = TOOLTIP_MARGIN
-  tooltipPos.value = { x: left, y: top }
+  tooltipPos.value = {x: left, y: top}
 }
 
 if (typeof window !== 'undefined') {

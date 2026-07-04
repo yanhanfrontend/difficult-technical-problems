@@ -19,7 +19,7 @@
 
       <el-tab-pane label="MultiSearchSelector">
         <el-row align="middle">
-          <el-col :offset="8" :span="8">
+          <el-col :offset="10" :span="4">
             <MultiSearchSelector/>
           </el-col>
         </el-row>

@@ -1,6 +1,14 @@
 <template>
   <div class="p-4 w-screen h-screen box-border">
     <el-tabs type="border-card" class="h-full w-full">
+      <el-tab-pane label="MultiSearchDialog">
+        <el-row align="middle">
+          <el-col :span="24">
+            <MultiSearchDialogPage/>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+
       <el-tab-pane label="LargeDataGrid">
         <el-row align="middle">
           <el-col :span="24">
@@ -16,21 +24,13 @@
           </el-col>
         </el-row>
       </el-tab-pane>
-
-      <el-tab-pane label="MultiSearchSelector">
-        <el-row align="middle">
-          <el-col :offset="10" :span="4">
-            <MultiSearchSelector/>
-          </el-col>
-        </el-row>
-      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script lang="ts" setup>
 import LargeDataGrid from "./components/LargeDataGrid.vue";
-import MultiSearchSelector from "./components/MultiSearchSelector.vue";
+import MultiSearchDialogPage from "./components/MultiSearchSelector/MultiSearchDialogPage.vue";
 import TableScrollTo from "./components/TableScrollTo.vue";
 </script>
 

@@ -1,6 +1,14 @@
 <template>
   <div class="p-4 w-screen h-screen box-border">
     <el-tabs type="border-card" class="h-full w-full">
+      <el-tab-pane label="TagDragDrop">
+        <el-row align="middle">
+          <el-col :span="24">
+            <TagDragDrop/>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+
       <el-tab-pane label="MultiSearchDialog">
         <el-row align="middle">
           <el-col :span="24">
@@ -29,6 +37,7 @@
 </template>
 
 <script lang="ts" setup>
+import TagDragDrop from "./components/TagDragDrop.vue";
 import LargeDataGrid from "./components/LargeDataGrid.vue";
 import MultiSearchDialogPage from "./components/MultiSearchSelector/MultiSearchDialogPage.vue";
 import TableScrollTo from "./components/TableScrollTo.vue";

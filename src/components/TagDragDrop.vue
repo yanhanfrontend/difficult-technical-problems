@@ -3,7 +3,7 @@
     <el-row :gutter="20">
       <el-col :span="6">
         <el-card shadow="never" title="Source Tags" class="tag-card">
-          <el-input v-model="inputText" type="textarea" :rows="3" placeholder="Input text and press Enter..."
+          <el-input v-model="inputText" type="textarea" :rows="10" placeholder="Input waferIds and press Enter..."
             @keydown.enter.prevent="handleConvert" resize="none" class="input-area" ref="inputRef" />
           <draggable v-model="leftTags" :group="tagGroup" item-key="id" class="left-tags-container"
             v-bind="dragOptions">

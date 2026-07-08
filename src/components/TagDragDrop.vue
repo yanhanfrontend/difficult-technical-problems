@@ -1,30 +1,55 @@
 <template>
   <div class="tag-drag-drop">
     <el-row :gutter="20">
-      <el-col :span="12">
+      <el-col :span="6">
         <el-card shadow="never" title="Source Tags" class="tag-card">
           <el-input v-model="inputText" type="textarea" :rows="3" placeholder="Input text and press Enter..."
             @keydown.enter.prevent="handleConvert" resize="none" class="input-area" ref="inputRef" />
-          <div class="left-tags-container" @dragover.prevent @drop="handleDropLeft">
-            <el-tag v-for="tag in leftTags" :key="tag.id" :label="tag.text" closable draggable="true"
-              @dragstart="handleDragStart($event, tag, 'left')" @close="handleRemoveTag(tag.id, 'left')"
-              class="draggable-tag">
-              {{ tag.text }}
-            </el-tag>
-          </div>
+          <draggable v-model="leftTags" :group="tagGroup" item-key="id" class="left-tags-container"
+            v-bind="dragOptions">
+            <template #item="{ element }">
+              <el-tag :label="element.text" effect="light" class="draggable-tag" closable
+                disable-transitions @close="handleDeleteTag(element, leftTags)">
+                {{ element.text }}
+              </el-tag>
+            </template>
+          </draggable>
         </el-card>
       </el-col>
 
-      <el-col :span="12">
-        <el-card shadow="never" title="Target Tags" class="tag-card">
-          <div class="right-tags-container" @dragover.prevent @drop="handleDropRight">
-            <el-tag v-for="tag in rightTags" :key="tag.id" :label="tag.text" closable draggable="true"
-              @dragstart="handleDragStart($event, tag, 'right')" @close="handleRemoveTag(tag.id, 'right')"
-              class="draggable-tag">
-              {{ tag.text }}
-            </el-tag>
+      <el-col :span="18">
+        <div class="right-section">
+          <div class="right-header">
+            <span class="section-title">Target Tags</span>
+            <el-button type="primary" size="small" @click="handleAddContainer">
+              <ElIcon><Plus /></ElIcon> Add Container
+            </el-button>
           </div>
-        </el-card>
+          <div class="right-containers-scroll">
+            <div class="right-containers-wrapper">
+              <el-card v-for="container in rightContainers" :key="container.id" shadow="never" class="tag-card-right">
+                <template #header>
+                  <div class="card-header">
+                    <span>{{ container.name }}</span>
+                    <el-button v-if="rightContainers.length > 1" type="danger" size="small"
+                      @click="handleRemoveContainer(container.id)">
+                      <ElIcon><Delete /></ElIcon>
+                    </el-button>
+                  </div>
+                </template>
+                <draggable v-model="container.tags" :group="tagGroup" item-key="id" class="right-tags-container"
+                  v-bind="dragOptions">
+                  <template #item="{ element }">
+                    <el-tag :label="element.text" effect="light" class="draggable-tag" closable
+                      disable-transitions @close="handleDeleteTag(element, container.tags)">
+                      {{ element.text }}
+                    </el-tag>
+                  </template>
+                </draggable>
+              </el-card>
+            </div>
+          </div>
+        </div>
       </el-col>
     </el-row>
   </div>
@@ -32,14 +57,23 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import draggable from 'vuedraggable'
+import { Plus, Delete } from '@element-plus/icons-vue'
+import { ElIcon } from 'element-plus'
 
 interface Tag {
-  id: string;
-  text: string;
+  id: string
+  text: string
+}
+
+interface Container {
+  id: string
+  name: string
+  tags: Tag[]
 }
 
 const generateInitialTags = (): Tag[] => {
-  const tags: Tag[] = [];
+  const tags: Tag[] = []
   const patterns = [
     'Short',
     'Medium length text',
@@ -51,99 +85,103 @@ const generateInitialTags = (): Tag[] => {
     'Medium',
     'Brief',
     'Concise',
-  ];
+  ]
   const longPatterns = [
     'This tag contains extremely long text content that definitely exceeds the container width by far',
     'Here is another very long tag text that will be truncated with ellipsis showing',
     'A super lengthy tag demonstrating the text-overflow ellipsis behavior in action',
     'This example tag has so much text that it cannot fit within the 80% width limit',
     'Extraordinary long tag content that will surely trigger the ellipsis display',
-  ];
+  ]
   for (let i = 0; i < 50; i++) {
-    let text: string;
+    let text: string
     if (i % 4 === 0) {
-      const longPattern = longPatterns[i % longPatterns.length];
-      text = longPattern.repeat(Math.floor(Math.random() * 2) + 1);
+      const longPattern = longPatterns[i % longPatterns.length]
+      text = longPattern.repeat(Math.floor(Math.random() * 2) + 1)
     } else {
-      const pattern = patterns[i % patterns.length];
-      const multiplier = Math.floor(Math.random() * 2) + 1;
-      text = pattern.repeat(multiplier).slice(0, Math.floor(Math.random() * 30) + 5);
+      const pattern = patterns[i % patterns.length]
+      const multiplier = Math.floor(Math.random() * 2) + 1
+      text = pattern.repeat(multiplier).slice(0, Math.floor(Math.random() * 30) + 5)
     }
     tags.push({
       id: `tag-init-${i}`,
       text,
-    });
+    })
   }
-  return tags;
-};
+  return tags
+}
 
-const inputText = ref('');
-const leftTags = ref<Tag[]>(generateInitialTags());
-const rightTags = ref<Tag[]>([]);
-const draggedTag = ref<{ tag: Tag; source: 'left' | 'right' } | null>(null);
-const inputRef = ref<any>(null);
+const inputText = ref('')
+const leftTags = ref<Tag[]>(generateInitialTags())
+const rightContainers = ref<Container[]>([
+  {
+    id: 'container-1',
+    name: 'Container 1',
+    tags: [],
+  },
+])
+const inputRef = ref<any>(null)
 
-let tagIdCounter = 50;
+let tagIdCounter = 50
+let containerIdCounter = 1
 
-const generateId = () => `tag-${++tagIdCounter}-${Date.now()}`;
+const generateId = () => `tag-${++tagIdCounter}-${Date.now()}`
+
+const tagGroup = {
+  name: 'tags',
+  pull: true,
+  put: true,
+}
+
+const dragOptions = {
+  filter: '.el-tag__close',
+  preventOnFilter: false,
+}
+
+const handleDeleteTag = (element: Tag, list: Tag[]) => {
+  const index = list.findIndex(t => t.id === element.id)
+  if (index !== -1) {
+    list.splice(index, 1)
+  }
+}
 
 const handleConvert = () => {
-  const text = inputText.value.trim();
-  if (!text) return;
+  const text = inputText.value.trim()
+  if (!text) return
 
-  const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line)
 
   lines.forEach(line => {
     if (!leftTags.value.some(t => t.text === line)) {
       leftTags.value.push({
         id: generateId(),
-        text: line
-      });
+        text: line,
+      })
     }
-  });
+  })
 
-  inputText.value = '';
-};
+  inputText.value = ''
+}
 
-const handleDragStart = (e: DragEvent, tag: Tag, source: 'left' | 'right') => {
-  draggedTag.value = { tag, source };
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', tag.id);
+const handleAddContainer = () => {
+  rightContainers.value.push({
+    id: `container-${++containerIdCounter}`,
+    name: `Container ${containerIdCounter}`,
+    tags: [],
+  })
+}
+
+const handleRemoveContainer = (id: string) => {
+  const container = rightContainers.value.find(c => c.id === id)
+  if (container) {
+    container.tags.forEach(tag => {
+      if (!leftTags.value.some(t => t.id === tag.id)) {
+        leftTags.value.push(tag)
+      }
+    })
+    rightContainers.value = rightContainers.value.filter(c => c.id !== id)
   }
-};
-
-const handleDropLeft = () => {
-  if (!draggedTag.value) return;
-  if (draggedTag.value.source === 'right') {
-    const tag = draggedTag.value.tag;
-    rightTags.value = rightTags.value.filter(t => t.id !== tag.id);
-    if (!leftTags.value.some(t => t.id === tag.id)) {
-      leftTags.value.push(tag);
-    }
-  }
-  draggedTag.value = null;
-};
-
-const handleDropRight = () => {
-  if (!draggedTag.value) return;
-  if (draggedTag.value.source === 'left') {
-    const tag = draggedTag.value.tag;
-    leftTags.value = leftTags.value.filter(t => t.id !== tag.id);
-    if (!rightTags.value.some(t => t.id === tag.id)) {
-      rightTags.value.push(tag);
-    }
-  }
-  draggedTag.value = null;
-};
-
-const handleRemoveTag = (id: string, source: 'left' | 'right') => {
-  if (source === 'left') {
-    leftTags.value = leftTags.value.filter(t => t.id !== id);
-  } else {
-    rightTags.value = rightTags.value.filter(t => t.id !== id);
-  }
-};
+}
 </script>
 
 <style scoped>
@@ -165,6 +203,13 @@ const handleRemoveTag = (id: string, source: 'left' | 'right') => {
   flex-direction: column;
 }
 
+.tag-card-right {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .tag-card :deep(.el-card__body) {
   flex: 1;
   display: flex;
@@ -172,12 +217,18 @@ const handleRemoveTag = (id: string, source: 'left' | 'right') => {
   padding: 12px;
 }
 
+.tag-card-right :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  min-height: 0;
+}
+
 .left-tags-container {
-  height: calc(100% - 94px);
+  flex: 1;
+  min-height: 0;
   margin-top: 16px;
-  padding: 8px;
-  border: 2px dashed #dcdfe6;
-  border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -186,11 +237,41 @@ const handleRemoveTag = (id: string, source: 'left' | 'right') => {
   overflow-y: auto;
 }
 
-.right-tags-container {
+.right-section {
+  height: calc(100vh - 104px);
+  display: flex;
+  flex-direction: column;
+}
+
+.right-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.right-containers-scroll {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.right-containers-wrapper {
+  display: flex;
+  gap: 20px;
+  padding-bottom: 8px;
   height: 100%;
-  padding: 8px;
-  border: 2px dashed #dcdfe6;
-  border-radius: 8px;
+}
+
+.right-tags-container {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -224,18 +305,9 @@ const handleRemoveTag = (id: string, source: 'left' | 'right') => {
   cursor: grabbing;
 }
 
-.empty-hint {
-  text-align: center;
-  color: #c0c4cc;
-  font-size: 14px;
-  padding: 40px 0;
-}
-
-.count-info {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #ebeef5;
-  font-size: 14px;
-  color: #606266;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

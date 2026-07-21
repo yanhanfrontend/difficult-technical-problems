@@ -1,26 +1,74 @@
 ﻿<template>
-  <div class="w-full h-screen">
-    <div
-        ref="gridWrapRef"
-        class="overflow-auto border border-gray-300 bg-white w-full h-[calc(100vh-100px)]"
-    >
+  <div class="w-full h-screen bg-gray-100 p-4">
+    <div class="grid grid-cols-[100px_1fr] grid-rows-[60px_1fr] h-full">
+      <!-- 左上角合并单元格 -->
+      <div class="bg-gray-500 text-white font-bold flex items-center justify-center border border-gray-300">
+        行/列
+      </div>
+
+      <!-- 上方列标题 -->
       <div
-          class="grid"
-          :style="{
-          gridTemplateColumns: 'repeat(100, 100px)',
-        }"
+          ref="colHeaderRef"
+          class="overflow-hidden border border-gray-300"
       >
         <div
-            v-for="idx in 10000"
-            :key="idx"
-            class="w-full h-[100px] border border-gray-200 hover:bg-sky-100 cursor-pointer transition-colors flex items-center justify-center"
-            :class="{ 'bg-sky-300': highlightedIdx === idx }"
-            @mouseenter="handleCellHover($event, idx)"
-            @mousemove="handleMouseMove($event, idx)"
-            @mouseleave="hideTooltip"
-            @click.stop="handleCellClick(idx)"
+            class="flex"
+            :style="{ width: totalWidth + 'px' }"
         >
-          {{ Math.floor((idx - 1) / 100) + 1 }}-{{ ((idx - 1) % 100) + 1 }}
+          <div
+              v-for="col in 100"
+              :key="'col-' + col"
+              class="w-[100px] h-[60px] bg-gray-400 text-white font-medium flex items-center justify-center border border-gray-300"
+          >
+            Col {{ col }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 左侧行标题 -->
+      <div
+          ref="rowHeaderRef"
+          class="overflow-hidden border border-gray-300"
+      >
+        <div
+            :style="{ height: totalHeight + 'px' }"
+        >
+          <div
+              v-for="row in 100"
+              :key="'row-' + row"
+              class="w-[100px] h-[100px] bg-gray-400 text-white font-medium flex items-center justify-center border border-gray-300"
+          >
+            Row {{ row }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 主网格区域 -->
+      <div
+          ref="gridWrapRef"
+          class="overflow-auto border border-gray-300 bg-white"
+          @scroll="handleGridScroll"
+      >
+        <div
+            class="grid"
+            :style="{
+          gridTemplateColumns: 'repeat(100, 100px)',
+          width: totalWidth + 'px',
+          height: totalHeight + 'px',
+        }"
+        >
+          <div
+              v-for="idx in 10000"
+              :key="idx"
+              class="w-full h-[100px] border border-gray-200 hover:bg-sky-100 cursor-pointer transition-colors flex items-center justify-center"
+              :class="{ 'bg-sky-300': highlightedIdx === idx }"
+              @mouseenter="handleCellHover($event, idx)"
+              @mousemove="handleMouseMove($event, idx)"
+              @mouseleave="hideTooltip"
+              @click.stop="handleCellClick(idx)"
+          >
+            {{ Math.floor((idx - 1) / 100) + 1 }}-{{ ((idx - 1) % 100) + 1 }}
+          </div>
         </div>
       </div>
     </div>
@@ -42,10 +90,15 @@ import {ref, onBeforeUnmount, useTemplateRef, nextTick, onMounted} from 'vue'
 
 const tooltipRef = useTemplateRef("tooltipRef")
 const gridWrapRef = useTemplateRef("gridWrapRef")
+const colHeaderRef = useTemplateRef("colHeaderRef")
+const rowHeaderRef = useTemplateRef("rowHeaderRef")
 
 const tooltipVisible = ref(false)
 const tooltipPos = ref({x: 0, y: 0, row: 0, column: 0})
 const highlightedIdx = ref(null)
+
+const totalWidth = 100 * 100
+const totalHeight = 100 * 100
 
 let cachedWidth = 0
 let cachedHeight = 0
@@ -119,6 +172,19 @@ const handleDocumentClick = (e) => {
   const gridWrap = gridWrapRef.value
   if (gridWrap && !gridWrap.contains(e.target)) {
     highlightedIdx.value = null
+  }
+}
+
+const handleGridScroll = () => {
+  const gridWrap = gridWrapRef.value
+  const colHeader = colHeaderRef.value
+  const rowHeader = rowHeaderRef.value
+
+  if (colHeader) {
+    colHeader.scrollLeft = gridWrap.scrollLeft
+  }
+  if (rowHeader) {
+    rowHeader.scrollTop = gridWrap.scrollTop
   }
 }
 

@@ -45,12 +45,12 @@
 </template>
 
 <script lang="ts" setup>
+import UIDesign from "./components/UIDesign.vue";
+import API from "./components/API.vue";
 import TagDragDrop from "./components/TagDragDrop.vue";
 import LargeDataGrid from "./components/LargeDataGrid.vue";
 import MultiSearchDialogPage from "./components/MultiSearchSelector/MultiSearchDialogPage.vue";
 import TableScrollTo from "./components/TableScrollTo.vue";
-import UIDesign from "./components/UIDesign.vue";
-import API from "./components/API.vue";
 </script>
 
 <style scoped></style>
